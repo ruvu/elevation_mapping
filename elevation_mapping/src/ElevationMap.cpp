@@ -46,6 +46,7 @@ ElevationMap::ElevationMap(ros::NodeHandle nodeHandle)
       nodeHandle_.subscribe(underlyingMapTopic_, 1, &ElevationMap::underlyingMapCallback, this);
   // TODO if (enableVisibilityCleanup_) when parameter cleanup is ready.
   visbilityCleanupMapPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>("visibility_cleanup_map", 1);
+  initialized_zero_ = !ros::param::param("~initialize_on_zero", false);
 
   initialTime_ = ros::Time::now();
 }
@@ -69,6 +70,30 @@ bool ElevationMap::add(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud, 
     ROS_ERROR("ElevationMap::add: Size of point cloud (%i) and variances (%i) do not agree.",
               (int) pointCloud->size(), (int) pointCloudVariances.size());
     return false;
+  }
+
+  if (!initialized_zero_)
+  {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudZero(new pcl::PointCloud<pcl::PointXYZRGB>());
+    for (GridMapIterator it(rawMap_); !it.isPastEnd(); ++it)
+    {
+      Position position;
+      rawMap_.getPosition(*it, position);
+      pcl::PointXYZRGB point;
+      point.x = position.x();
+      point.y = position.y();
+      point.z = 0;
+      pointCloudZero->push_back(point);
+    }
+
+    Eigen::VectorXf pointCloudZeroVariances(pointCloudZero->size());
+    for (unsigned int i = 0; i < pointCloudZero->size(); ++i)
+    {
+      pointCloudZeroVariances(i) = 0.2;
+    }
+
+    initialized_zero_ = true;
+    add(pointCloudZero, pointCloudZeroVariances, timestamp, transformationSensorToMap);
   }
 
   // Initialization for time calculation.

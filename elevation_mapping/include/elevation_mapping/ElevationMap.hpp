@@ -306,6 +306,8 @@ class ElevationMap
   bool enableVisibilityCleanup_;
   double visibilityCleanupDuration_;
   double scanningDuration_;
+
+  bool initialized_zero_ = false;
 };
 
 } /* namespace */
