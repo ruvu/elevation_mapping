@@ -413,6 +413,9 @@ bool ElevationMap::clear()
   fusedMap_.resetTimestamp();
   visibilityCleanupMap_.clearAll();
   visibilityCleanupMap_.resetTimestamp();
+
+  initialized_zero_ = !ros::param::param("~initialize_on_zero", false);
+
   return true;
 }
 
